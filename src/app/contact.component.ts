@@ -23,6 +23,7 @@ export class ContactComponent implements OnDestroy {
   sending = false;
   sent = false;
   error = '';
+  emailStatus: boolean | null = null; // true=sent, false=failed, null=unknown
   private dismissTimer: any = null;
   private hideTimer: any = null;
   hiding = false;
@@ -49,10 +50,11 @@ export class ContactComponent implements OnDestroy {
       reason: this.reason,
       message: this.message
     }).subscribe({
-      next: () => {
-  console.debug('contact API success');
+    next: (resp: any) => {
+  console.debug('contact API success', resp);
   this.sending = false;
   this.sent = true;
+  this.emailStatus = (resp && typeof resp.emailStatus === 'boolean') ? resp.emailStatus : null;
   // show success banner and schedule hide+remove with fade
   this.hiding = false;
   // clear any previous timers
@@ -71,7 +73,15 @@ export class ContactComponent implements OnDestroy {
       },
       error: err => {
         this.sending = false;
-        this.error = 'Failed to send. Please try again later.';
+        console.error('Contact submit failed', err);
+  this.emailStatus = null;
+        // attempt to extract readable message
+        let detail = '';
+        if (err?.error) {
+          if (typeof err.error === 'string') detail = err.error;
+          else if (err.error.message) detail = err.error.message;
+        }
+        this.error = 'Failed to send. ' + (detail ? detail : 'Please try again later.');
       }
     });
   }
@@ -95,5 +105,6 @@ export class ContactComponent implements OnDestroy {
     // hide immediately
     this.hiding = false;
     this.sent = false;
+  this.emailStatus = null;
   }
 }

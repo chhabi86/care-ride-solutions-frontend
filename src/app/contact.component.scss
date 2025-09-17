@@ -38,6 +38,19 @@ button[disabled].send-now, .send-now[disabled] {
   cursor: pointer;
 }
 
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* fade-in when appearing */
 #contact-success:not(.hidden) {
   opacity: 1;
