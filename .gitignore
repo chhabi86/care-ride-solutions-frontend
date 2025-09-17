@@ -1,0 +1,17 @@
+# macOS system files
+.DS_Store
+src/.DS_Store
+
+# Node and Angular build artifacts
+node_modules/
+dist/
+.angular/
+
+# Logs and lock files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor
+.vscode/
