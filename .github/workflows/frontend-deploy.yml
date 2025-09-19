@@ -1,12 +1,23 @@
 name: Frontend Deploy
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'package.json'
+      - 'angular.json'
+      - 'src/**'
+      - '.github/workflows/frontend-deploy.yml'
   workflow_dispatch:
     inputs:
       ref:
         description: 'Git ref (branch, tag, or commit) to deploy'
         required: false
         default: 'main'
+
+concurrency:
+  group: frontend-deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -19,7 +30,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || 'main' }}
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -32,6 +43,17 @@ jobs:
 
       - name: Build production
         run: npx ng build --configuration production
+
+      - name: Wait for backend health (max ~2 min)
+        run: |
+          for i in {1..30}; do
+            STATUS=$(curl -fsS -o /dev/null -w '%{http_code}' https://${{ secrets.DOMAIN }}/api/actuator/health || true)
+            if [ "$STATUS" = "200" ]; then echo "Backend healthy over HTTPS"; break; fi
+            STATUS=$(curl -fsS -o /dev/null -w '%{http_code}' http://${{ secrets.DOMAIN }}/api/actuator/health || true)
+            if [ "$STATUS" = "200" ]; then echo "Backend healthy over HTTP"; break; fi
+            echo "Attempt $i: backend not healthy yet (status=$STATUS)"; sleep 4;
+            if [ "$i" = "30" ]; then echo "Backend did not become healthy in time"; exit 1; fi
+          done
 
       - name: Set up SSH key
         uses: webfactory/ssh-agent@v0.9.0
