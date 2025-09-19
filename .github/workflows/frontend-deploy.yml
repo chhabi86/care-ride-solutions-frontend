@@ -63,6 +63,10 @@ jobs:
             if [ "$i" = "30" ]; then echo "Backend did not become healthy in time"; exit 1; fi
           done
 
+      - name: Prepare remote directory
+        run: |
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "set -euo pipefail; sudo mkdir -p /var/www/care-ride-frontend; sudo chown ${{ secrets.DEPLOY_USER }}: /var/www/care-ride-frontend; sudo find /var/www/care-ride-frontend -maxdepth 0 -type d -exec chmod 755 {} \;"
+
       - name: Sync dist to server
         run: |
           rsync -az --delete dist/care-ride-frontend/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/var/www/care-ride-frontend/
