@@ -74,7 +74,7 @@ jobs:
 
       - name: Smoke Check Root
         run: |
-          D=${DOMAIN:-careridesolutionsspa.com}
+          D=${DOMAIN:-careridesolutionspa.com}
           IP=${{ secrets.DEPLOY_HOST }}
           STATUS=$(curl -fsS -o /dev/null -w '%{http_code}' https://$D/ || true)
           if [ "$STATUS" != "200" ]; then STATUS=$(curl -fsS -o /dev/null -w '%{http_code}' http://$D/ || true); fi
