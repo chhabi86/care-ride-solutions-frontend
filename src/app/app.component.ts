@@ -77,7 +77,7 @@ import { ApiService, ServiceType } from './api.service';
         </div>
       </div>
       <div style="background:#53c26b;padding:16px 0;text-align:center;color:#fff;font-size:1.1rem;font-weight:500;border-radius:0 0 10px 10px;margin-top:0;">
-  Copyright © 2025 | Care Ride Solutions | All Rights Reserved
+  Copyright © 2025 | Care Ride Solution | All Rights Reserved
       </div>
     </footer>
   `
