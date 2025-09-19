@@ -25,6 +25,8 @@ jobs:
     environment: production
     permissions:
       contents: read
+    env:
+      DOMAIN: ${{ secrets.DOMAIN }}
 
     steps:
       - name: Checkout
@@ -44,17 +46,6 @@ jobs:
       - name: Build production
         run: npx ng build --configuration production
 
-      - name: Wait for backend health (max ~2 min)
-        run: |
-          for i in {1..30}; do
-            STATUS=$(curl -fsS -o /dev/null -w '%{http_code}' https://${{ secrets.DOMAIN }}/api/actuator/health || true)
-            if [ "$STATUS" = "200" ]; then echo "Backend healthy over HTTPS"; break; fi
-            STATUS=$(curl -fsS -o /dev/null -w '%{http_code}' http://${{ secrets.DOMAIN }}/api/actuator/health || true)
-            if [ "$STATUS" = "200" ]; then echo "Backend healthy over HTTP"; break; fi
-            echo "Attempt $i: backend not healthy yet (status=$STATUS)"; sleep 4;
-            if [ "$i" = "30" ]; then echo "Backend did not become healthy in time"; exit 1; fi
-          done
-
       - name: Set up SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -63,6 +54,15 @@ jobs:
       - name: Known Hosts
         run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Wait for backend health (max ~2 min)
+        run: |
+          for i in {1..30}; do
+            STATUS=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "curl -fsS -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/actuator/health" || true)
+            if [ "$STATUS" = "200" ]; then echo "Backend healthy (local)"; break; fi
+            echo "Attempt $i: backend not healthy yet (status=$STATUS)"; sleep 4;
+            if [ "$i" = "30" ]; then echo "Backend did not become healthy in time"; exit 1; fi
+          done
+
       - name: Sync dist to server
         run: |
           rsync -az --delete dist/care-ride-frontend/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/var/www/care-ride-frontend/
@@ -70,11 +70,16 @@ jobs:
 
       - name: Smoke Check Root
         run: |
-          STATUS=$(curl -fsS -o /dev/null -w '%{http_code}' https://${{ secrets.DOMAIN }}/ || true)
+          D=${DOMAIN:-careridesolutionsspa.com}
+          IP=${{ secrets.DEPLOY_HOST }}
+          STATUS=$(curl -fsS -o /dev/null -w '%{http_code}' https://$D/ || true)
+          if [ "$STATUS" != "200" ]; then STATUS=$(curl -fsS -o /dev/null -w '%{http_code}' http://$D/ || true); fi
+          if [ "$STATUS" != "200" ]; then STATUS=$(curl -fsS -o /dev/null -w '%{http_code}' http://$IP/ || true); fi
           echo "HTTP Status: $STATUS"; test "$STATUS" = "200"
 
       - name: Summary
         if: always()
         run: |
           echo "### Frontend Deploy" >> $GITHUB_STEP_SUMMARY
-          echo "Ref: ${{ inputs.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "Ref: $GITHUB_REF" >> $GITHUB_STEP_SUMMARY
+          echo "SHA: $GITHUB_SHA" >> $GITHUB_STEP_SUMMARY
