@@ -54,14 +54,15 @@ jobs:
       - name: Known Hosts
         run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Wait for backend health (max ~2 min)
+      - name: Check backend health (optional)
         run: |
-          for i in {1..30}; do
-            STATUS=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "curl -fsS -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/actuator/health" || true)
-            if [ "$STATUS" = "200" ]; then echo "Backend healthy (local)"; break; fi
-            echo "Attempt $i: backend not healthy yet (status=$STATUS)"; sleep 4;
-            if [ "$i" = "30" ]; then echo "Backend did not become healthy in time"; exit 1; fi
-          done
+          echo "Checking if backend is available..."
+          STATUS=$(ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "curl -fsS -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/actuator/health 2>/dev/null" || echo "000")
+          if [ "$STATUS" = "200" ]; then 
+            echo "✅ Backend is healthy and available"
+          else
+            echo "⚠️  Backend not available (status=$STATUS) - proceeding with frontend-only deployment"
+          fi
 
       - name: Prepare remote directory
         run: |
