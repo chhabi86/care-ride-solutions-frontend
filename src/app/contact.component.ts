@@ -1,4 +1,5 @@
 import { Component, OnDestroy, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 
@@ -6,7 +7,8 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-contact',
   standalone: true,
-  imports: [FormsModule],
+  // Added CommonModule so structural directives (*ngIf, *ngFor) work; without it success/error banners stayed hidden
+  imports: [CommonModule, FormsModule],
   templateUrl: './contact.component.html',
   styleUrls: ['./contact.component.scss']
 })
@@ -55,6 +57,12 @@ export class ContactComponent implements OnDestroy {
   this.sending = false;
   this.sent = true;
   this.emailStatus = (resp && typeof resp.emailStatus === 'boolean') ? resp.emailStatus : null;
+  // reset form fields so user gets visual feedback aside from banner
+  this.name = '';
+  this.phone = '';
+  this.email = '';
+  this.reason = '';
+  this.message = '';
   // show success banner and schedule hide+remove with fade
   this.hiding = false;
   // clear any previous timers
