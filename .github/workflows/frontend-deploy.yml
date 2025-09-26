@@ -3,11 +3,6 @@ name: Frontend Deploy
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'package.json'
-      - 'angular.json'
-      - 'src/**'
-      - '.github/workflows/frontend-deploy.yml'
   workflow_dispatch:
     inputs:
       ref:
